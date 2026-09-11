@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>xArm 1S — Fonctionnalités</title>
+<style>
+  :root{
+    --bg:#0b1016; --surface:#131b24; --surface2:#1b2530; --border:#2a3542;
+    --text:#e6edf3; --muted:#9aa7b4; --faint:#5b6672;
+    --amber:#ffb020; --green:#34e39a; --blue:#4dabf7; --violet:#b197fc; --red:#ff5b52;
+    --radius:14px;
+  }
+  :root[data-t="light"]{
+    --bg:#eef1f4; --surface:#ffffff; --surface2:#e9edf1; --border:#cdd5de;
+    --text:#16202b; --muted:#54616e; --faint:#93a0ad;
+    --amber:#b56b00; --green:#0a7a48; --blue:#1c6fb8; --violet:#6d49c7; --red:#c53328;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Inter","Segoe UI",Ubuntu,system-ui,sans-serif;background:var(--bg);color:var(--text);
+    line-height:1.5;-webkit-font-smoothing:antialiased;padding:0 0 60px}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+  header{padding:34px 0 18px;display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}
+  .mark{width:46px;height:46px;flex:none;color:var(--amber)}
+  h1{font-size:26px;letter-spacing:.02em}
+  .sub{color:var(--muted);font-size:14px;margin-top:2px}
+  .theme{margin-left:auto;background:var(--surface2);color:var(--text);border:1px solid var(--border);
+    border-radius:999px;padding:9px 14px;cursor:pointer;font-size:14px}
+  .theme:hover{border-color:var(--muted)}
+  .controls{position:sticky;top:0;background:var(--bg);padding:14px 0 12px;z-index:5;
+    border-bottom:1px solid var(--border)}
+  .search{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    color:var(--text);padding:13px 16px;font-size:15px;outline:none}
+  .search:focus{border-color:var(--amber)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .chip{background:var(--surface2);color:var(--muted);border:1px solid var(--border);border-radius:999px;
+    padding:7px 14px;cursor:pointer;font-size:13px;transition:.15s;white-space:nowrap;display:inline-flex;
+    align-items:center;gap:7px}
+  .chip .dot{width:9px;height:9px;border-radius:50%}
+  .chip:hover{color:var(--text)}
+  .chip.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+  .count{color:var(--faint);font-size:13px;margin:16px 0 6px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;
+    position:relative;overflow:hidden}
+  .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c,var(--amber))}
+  .card h3{font-size:15px;display:flex;align-items:center;gap:9px;margin-bottom:5px}
+  .card h3 .ic{font-size:17px}
+  .card p{color:var(--muted);font-size:13.5px}
+  .card .cat{position:absolute;top:12px;right:14px;font-size:11px;color:var(--faint);letter-spacing:.03em}
+  .empty{color:var(--muted);padding:40px;text-align:center}
+  footer{color:var(--faint);font-size:12.5px;margin-top:26px;border-top:1px solid var(--border);padding-top:14px}
+  mark{background:color-mix(in srgb,var(--amber) 35%,transparent);color:inherit;border-radius:3px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <svg class="mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6">
+      <polygon points="16,2 29,9.5 29,22.5 16,30 3,22.5 3,9.5"/><circle cx="16" cy="16" r="3.2" fill="currentColor"/>
+    </svg>
+    <div>
+      <h1>xArm 1S — Fonctionnalités</h1>
+      <div class="sub">Bras robotisé Hiwonder 6 DDL · d'après les protocoles LSC (contrôleur USB) & bus-servo LewanSoul</div>
+    </div>
+    <button class="theme" id="theme">◐ Thème</button>
+  </header>
+
+  <div class="controls">
+    <input class="search" id="q" placeholder="Rechercher une fonctionnalité… (ex. température, pince, action)">
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="count" id="count"></div>
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" hidden>Aucune fonctionnalité ne correspond.</div>
+
+  <footer>Source : archive « xArm 1S Robot Arm » — LSC Series Servo Controller Communication Protocol V1.2
+    & Hiwonder/LewanSoul Bus Servo Communication Protocol. Une phrase par fonction, à titre indicatif.</footer>
+</div>
+
+<script>
+const CATS = {
+  mouvement:{label:"Mouvement",   color:"var(--amber)"},
+  actions:  {label:"Groupes d'actions", color:"var(--violet)"},
+  etat:     {label:"État & capteurs",   color:"var(--green)"},
+  servo:    {label:"Servo (bus)",  color:"var(--blue)"},
+  pilotage: {label:"Pilotage",     color:"var(--red)"},
+  materiel: {label:"Matériel",     color:"var(--muted)"},
+};
+const F = [
+  ["mouvement","🎯","Déplacement multi-servo","Envoie n'importe quels servos (1–6) vers une position 0–1000 (0–240°) sur une durée choisie (0–30 s)."],
+  ["mouvement","⏱️","Mouvement synchronisé","Plusieurs servos atteignent leur cible en même temps pour un geste fluide et coordonné."],
+  ["mouvement","⏹️","Arrêt immédiat","Stoppe sur-le-champ le groupe d'actions ou la file de mouvements en cours."],
+  ["mouvement","🐢","Vitesse d'exécution","Ajuste la vitesse d'un groupe d'actions en pourcentage (ex. 200 % = deux fois plus vite)."],
+
+  ["actions","▶️","Lecture de groupe d'actions","Rejoue une séquence préenregistrée une ou plusieurs fois (0 = en boucle infinie)."],
+  ["actions","💾","Téléchargement de groupes","Mémorise des groupes d'actions dans le contrôleur pour les rejouer plus tard."],
+  ["actions","🔌","Fonctionnement hors-ligne","Rejoue automatiquement les groupes mémorisés dès la mise sous tension, sans PC."],
+  ["actions","📣","Retour d'état de séquence","Le contrôleur signale de lui-même le début, l'arrêt forcé et la fin naturelle d'un groupe."],
+
+  ["etat","📐","Lecture des positions","Lit l'angle courant de chaque servo (retour de position temps réel)."],
+  ["etat","🌡️","Température des servos","Lit la température interne de chaque servo pour surveiller la surchauffe."],
+  ["etat","🔋","Tension de la batterie","Lit la tension d'alimentation du contrôleur en millivolts."],
+  ["etat","⚡","Tension du servo","Lit la tension d'entrée réelle de chaque servo."],
+  ["etat","🚨","Alarmes de défaut","Le servo signale surchauffe, surtension ou blocage (rotor bloqué) via sa LED et coupe le couple."],
+
+  ["servo","✋","Couple ON/OFF","Coupe le couple d'un servo pour bouger le bras à la main, puis le réengage."],
+  ["servo","📏","Débattement (butées logicielles)","Limite l'angle min/max autorisé de chaque servo, sauvegardé même hors tension."],
+  ["servo","🎚️","Déviation (réglage du zéro)","Corrige le point neutre de chaque servo (±30°) et le mémorise."],
+  ["servo","🛡️","Seuils de protection","Définit les limites de tension et la température maxi par servo pour éviter la casse."],
+  ["servo","🔄","Mode moteur","Transforme un servo en moteur à rotation continue, vitesse et sens réglables."],
+  ["servo","💡","Contrôle de la LED","Allume/éteint la LED du servo et choisit les défauts qui la font clignoter."],
+  ["servo","🆔","Identifiant de servo","Lit ou réécrit l'ID (0–253) d'un servo sur le bus, sauvegardé."],
+
+  ["pilotage","🎮","Manette sans fil","Pilotage direct du bras avec la manette radio fournie."],
+  ["pilotage","📱","Application mobile","Contrôle et programmation depuis l'app iOS / Android."],
+  ["pilotage","🖱️","Contrôle à la souris","Pilotage du bras au curseur depuis le logiciel PC."],
+  ["pilotage","💻","Logiciel PC / développement","Programmation d'actions, apprentissage et interface série de développement."],
+
+  ["materiel","🦾","6 degrés de liberté","Base (rotation), épaule, coude, poignet (flexion + rotation) et pince."],
+  ["materiel","🧠","Servos bus intelligents","Servos à retour de position chaînés sur un bus série, course 0–240°."],
+  ["materiel","🤏","Pince","Préhenseur en bout de bras, ouverture/fermeture pilotée comme un axe."],
+];
+
+let active = new Set(Object.keys(CATS)); // toutes catégories au départ
+const grid = document.getElementById('grid'), chipsEl = document.getElementById('chips'),
+      q = document.getElementById('q'), countEl = document.getElementById('count'), emptyEl = document.getElementById('empty');
+
+const allChip = document.createElement('div');
+allChip.className='chip on'; allChip.dataset.k='__all'; allChip.textContent='Tout';
+chipsEl.appendChild(allChip);
+for(const [k,c] of Object.entries(CATS)){
+  const el=document.createElement('div'); el.className='chip on'; el.dataset.k=k;
+  el.innerHTML=`<span class="dot" style="background:${c.color}"></span>${c.label}`;
+  chipsEl.appendChild(el);
+}
+chipsEl.addEventListener('click', e=>{
+  const chip=e.target.closest('.chip'); if(!chip) return;
+  const k=chip.dataset.k;
+  if(k==='__all'){ active=new Set(Object.keys(CATS)); }
+  else { if(active.has(k)) active.delete(k); else active.add(k);
+    if(active.size===0) active=new Set(Object.keys(CATS)); }
+  syncChips(); render();
+});
+function syncChips(){
+  for(const chip of chipsEl.children){
+    const k=chip.dataset.k;
+    if(k==='__all') chip.classList.toggle('on', active.size===Object.keys(CATS).length);
+    else chip.classList.toggle('on', active.has(k));
+  }
+}
+q.addEventListener('input', render);
+document.getElementById('theme').addEventListener('click', ()=>{
+  const r=document.documentElement; r.dataset.t = r.dataset.t==='light'?'':'light';
+});
+function esc(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function hl(s,term){ if(!term) return esc(s);
+  const i=s.toLowerCase().indexOf(term); if(i<0) return esc(s);
+  return esc(s.slice(0,i))+'<mark>'+esc(s.slice(i,i+term.length))+'</mark>'+esc(s.slice(i+term.length)); }
+function render(){
+  const term=q.value.trim().toLowerCase();
+  grid.innerHTML='';
+  let n=0;
+  for(const [cat,ic,title,desc] of F){
+    if(!active.has(cat)) continue;
+    if(term && !(title+' '+desc+' '+CATS[cat].label).toLowerCase().includes(term)) continue;
+    n++;
+    const card=document.createElement('div'); card.className='card'; card.style.setProperty('--c',CATS[cat].color);
+    card.innerHTML=`<span class="cat">${CATS[cat].label}</span>
+      <h3><span class="ic">${ic}</span>${hl(title,term)}</h3><p>${hl(desc,term)}</p>`;
+    grid.appendChild(card);
+  }
+  countEl.textContent=`${n} fonctionnalité${n>1?'s':''}`;
+  emptyEl.hidden = n>0;
+}
+render();
+</script>
+</body>
+</html>

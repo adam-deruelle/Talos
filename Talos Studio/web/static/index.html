@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="fr" data-boot="1">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="xarm-token" content="__XARM_TOKEN__">
+  <title>xArm · Console</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <!-- ===================== BARRE D'ÉTAT ===================== -->
+  <header class="rail">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+        <polygon points="16,2 29,9.5 29,22.5 16,30 3,22.5 3,9.5"
+                 fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <circle cx="16" cy="16" r="3.2" fill="currentColor"/>
+      </svg>
+      <div class="brand-txt">
+        <b>xARM</b><span>· CONSOLE</span>
+      </div>
+    </div>
+
+    <div class="rail-center">
+      <div id="conn" class="pill wait"><i class="led"></i><span id="conn-txt">CONNEXION…</span></div>
+      <div id="dev" class="dev"></div>
+    </div>
+
+    <div class="rail-right">
+      <div class="seg" id="range" role="group" aria-label="Course">
+        <button data-mode="safe" class="on">SÛR</button>
+        <button data-mode="full">COMPLET</button>
+      </div>
+      <div class="feed" title="Avance globale (feed)">
+        <label>VITESSE</label>
+        <input id="feed" type="range" min="25" max="200" step="5" value="100">
+        <output id="feed-out">100%</output>
+      </div>
+      <button id="theme" class="icon-btn" title="Thème (sombre / clair / système)">◐</button>
+      <button id="estop" class="estop" title="Arrêt d'urgence (Échap)">ARRÊT</button>
+    </div>
+  </header>
+
+  <!-- ===================== GRILLE ===================== -->
+  <main class="grid">
+
+      <!-- VISUALISATION -->
+      <section class="panel viz" style="grid-area:viz">
+        <div class="panel-h"><i class="led"></i><h2>VISUALISATION</h2>
+          <div class="panel-h-right">
+            <button id="grip-open"  class="mini">OUVRIR</button>
+            <button id="grip-half"  class="mini">MI</button>
+            <button id="grip-close" class="mini">FERMER</button>
+          </div>
+        </div>
+        <div class="viz-body">
+          <svg id="arm" viewBox="0 0 420 300" class="scope" aria-label="Vue du bras"></svg>
+          <svg id="compass" viewBox="0 0 120 120" class="compass" aria-label="Cap base / roulis poignet"></svg>
+        </div>
+      </section>
+
+      <!-- AXES (DRO) -->
+      <section class="panel axes" style="grid-area:axes">
+        <div class="panel-h"><i class="led"></i><h2>AXES</h2>
+          <div class="dro-cols"><span>CONSIGNE</span><span>LU</span></div>
+        </div>
+        <div id="strips"></div>
+      </section>
+
+      <!-- COMMANDE -->
+      <section class="panel cmd" style="grid-area:cmd">
+        <div class="panel-h"><i class="led"></i><h2>COMMANDE</h2></div>
+        <div class="cmd-body">
+          <div class="cmd-row">
+            <button id="home" class="btn accent">⌂ HOME</button>
+            <button id="park" class="btn">↧ REPLI</button>
+            <button id="read" class="btn">LIRE</button>
+            <button id="recaler" class="btn">RECALER</button>
+            <button id="mirror" class="btn">MIROIR</button>
+            <button id="release" class="btn danger-ghost">RELÂCHER</button>
+            <button id="pause" class="btn">⏸ PAUSE</button>
+          </div>
+          <div class="cmd-row wrap">
+            <label class="field">DURÉE
+              <input id="dur" type="range" min="100" max="3000" step="50" value="800">
+              <output id="dur-out">800</output>
+            </label>
+            <label class="field">PAS
+              <input id="step" type="number" min="1" max="200" value="50">
+            </label>
+            <div class="seg" id="profile" role="group" aria-label="Profil">
+              <button data-p="lineaire" class="on">LINÉAIRE</button>
+              <button data-p="doux">DOUX</button>
+            </div>
+            <label class="tgl"><input id="live" type="checkbox"><span></span>Suivi au glissement</label>
+            <label class="tgl"><input id="follow" type="checkbox" checked><span></span>Curseurs sur la lecture</label>
+            <label class="tgl"><input id="autoread" type="checkbox"><span></span>Relecture auto</label>
+          </div>
+        </div>
+      </section>
+
+      <!-- POSES -->
+      <aside class="panel poses" style="grid-area:poses">
+        <div class="panel-h"><i class="led"></i><h2>POSES</h2></div>
+        <div class="rack">
+          <ul id="pose-list" class="list" tabindex="0"></ul>
+          <div class="rack-row">
+            <input id="pose-name" placeholder="nom de la pose">
+            <button id="pose-save" class="btn accent sm">ENREGISTRER</button>
+          </div>
+          <div class="rack-row">
+            <button id="pose-goto" class="btn sm">ALLER</button>
+            <button id="pose-del" class="btn danger-ghost sm">SUPPRIMER</button>
+          </div>
+          <div class="rack-row split">
+            <button id="pose-play" class="btn sm">▶ JOUER TOUT</button>
+            <label class="tgl sm"><input id="loop" type="checkbox"><span></span>Boucle</label>
+            <label class="field sm">PAUSE
+              <input id="pause-ms" type="number" min="0" max="5000" step="100" value="300">
+            </label>
+          </div>
+          <div class="rack-row split">
+            <button id="pose-import" class="btn ghost sm">IMPORTER</button>
+            <button id="pose-export" class="btn ghost sm">EXPORTER</button>
+            <input id="file-in" type="file" accept="application/json" hidden>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ENREGISTREMENT GESTUEL -->
+      <aside class="panel rec" style="grid-area:rec">
+        <div class="panel-h"><i class="led"></i><h2>ENREGISTREMENT GESTUEL</h2></div>
+        <div class="rack">
+          <div class="rack-row">
+            <button id="rec-toggle" class="btn rec-btn"><i class="rec-dot"></i> ENREGISTRER</button>
+            <span id="rec-info" class="rec-info">—</span>
+          </div>
+          <div class="rack-row">
+            <input id="rec-name" placeholder="nom de la trajectoire">
+            <button id="rec-save" class="btn accent sm" disabled>SAUVER</button>
+          </div>
+          <ul id="rec-list" class="list short" tabindex="0"></ul>
+          <div class="rack-row split">
+            <button id="rec-play" class="btn sm">▶ REJOUER</button>
+            <button id="rec-del" class="btn danger-ghost sm">SUPPRIMER</button>
+          </div>
+          <p class="hint">Relâche les servos, capture le mouvement à la main (~10 img/s),
+             puis rejoue à la vitesse démontrée.</p>
+        </div>
+      </aside>
+
+      <!-- JOURNAL -->
+    <section class="panel log" style="grid-area:log">
+      <div class="panel-h"><i class="led"></i><h2>JOURNAL / TÉLÉMÉTRIE</h2>
+        <span id="armed" class="armed"></span>
+      </div>
+      <div id="log" class="log-body"></div>
+    </section>
+  </main>
+
+  <div id="scanline" class="scanline"></div>
+</body>
+</html>

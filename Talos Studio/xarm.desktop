@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=xArm
+GenericName=Panneau de contrôle du bras
+Comment=Application native de contrôle du bras robotisé Hiwonder xArm (USB HID)
+Exec=/home/adam/Documents/Arm/xArm
+Icon=/home/adam/Documents/Arm/assets/xarm.svg
+Terminal=false
+Categories=Utility;Electronics;
+Keywords=robot;arm;bras;servo;xarm;hiwonder;hid;
+StartupNotify=true

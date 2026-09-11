@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#232a34"/>
+      <stop offset="1" stop-color="#12151b"/>
+    </linearGradient>
+    <linearGradient id="arm" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5b8def"/>
+      <stop offset="1" stop-color="#3d6fd0"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="8" y="8" width="240" height="240" rx="52" fill="url(#bg)"/>
+  <rect x="8.5" y="8.5" width="239" height="239" rx="51.5" fill="none"
+        stroke="#2c333f" stroke-width="1"/>
+
+  <!-- base -->
+  <rect x="86" y="196" width="84" height="20" rx="8" fill="#39424f"/>
+  <circle cx="128" cy="196" r="16" fill="url(#arm)"/>
+  <circle cx="128" cy="196" r="6" fill="#12151b"/>
+
+  <!-- segment épaule -> coude -->
+  <rect x="118" y="118" width="20" height="82" rx="10" fill="url(#arm)"
+        transform="rotate(18 128 160)"/>
+  <!-- segment coude -> poignet -->
+  <rect x="128" y="70" width="20" height="78" rx="10" fill="url(#arm)"
+        transform="rotate(-30 138 108)"/>
+
+  <!-- articulations (position lue = vert) -->
+  <circle cx="112" cy="120" r="11" fill="#37d67a"/>
+  <circle cx="112" cy="120" r="4" fill="#12151b"/>
+  <circle cx="156" cy="74" r="10" fill="#37d67a"/>
+  <circle cx="156" cy="74" r="3.5" fill="#12151b"/>
+
+  <!-- pince -->
+  <g transform="rotate(-30 172 58)">
+    <rect x="164" y="34" width="9" height="30" rx="4" fill="#e8ecf2"/>
+    <rect x="180" y="34" width="9" height="30" rx="4" fill="#e8ecf2"/>
+    <rect x="162" y="56" width="30" height="10" rx="4" fill="#8b95a5"/>
+  </g>
+</svg>

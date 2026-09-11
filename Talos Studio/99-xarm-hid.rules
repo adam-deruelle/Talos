@@ -1,0 +1,8 @@
+# Accès non-root au bras Hiwonder xArm (STM32 en HID) — VID 0483 / PID 5750.
+# Copier dans /etc/udev/rules.d/, recharger, puis rebrancher le bras.
+#   sudo cp 99-xarm-hid.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload-rules && sudo udevadm trigger
+
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="5750", MODE="0660", TAG+="uaccess"
+KERNEL=="hidraw*", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="5750", MODE="0660", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="5750", MODE="0660", TAG+="uaccess"
