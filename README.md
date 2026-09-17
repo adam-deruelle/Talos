@@ -37,3 +37,7 @@ conserver une vision à long terme tout en avançant par objectifs intermédiair
 ## Finalité
 Au-delà de la réalisation d'un robot fonctionnel, ce projet constitue un support d'apprentissage et d'expérimentation sur le long terme.
 Il a vocation à devenir une plateforme personnelle de recherche et de développement permettant de tester de nouvelles idées, d'intégrer progressivement de nouvelles technologies et de développer une expertise dans le domaine de la robotique intelligente.
+
+## Contributeurs
+- **Adam DERUELLE** — vision et architecture du projet, modèle cinématique du bras (voir `MK I/`).
+- **Harry Troule** — logiciel de contrôle du bras (voir [`Talos Studio/`](Talos%20Studio/README.md)), développé avec l'assistance de Claude Code.
