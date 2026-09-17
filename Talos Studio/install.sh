@@ -16,7 +16,7 @@ chmod +x "$DIR/xarm-web-launcher.sh" "$DIR/xarm-launcher.sh" \
 
 # 2. Générer le .desktop avec les chemins réels de CE dossier
 mkdir -p "$APPS"
-sed -e "s|^Exec=.*|Exec=$DIR/xArm|" \
+sed -e "s|^Exec=.*|Exec=\"$DIR/xArm\"|" \
     -e "s|^Icon=.*|Icon=$DIR/assets/xarm.svg|" \
     "$DIR/xarm.desktop" > "$DESKTOP"
 chmod +x "$DESKTOP" 2>/dev/null || true

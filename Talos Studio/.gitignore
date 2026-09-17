@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environment
+venv/
+
+# PyInstaller build artifacts (rebuild with: pyinstaller xArm.spec)
+build/
+dist/
+/xArm
+
+# Runtime logs
+run.log
+
+# Claude Code local (per-machine) settings
+.claude/settings.local.json

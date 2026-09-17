@@ -3,11 +3,12 @@
 compute the phone's 3D position relative to it, and stream it to the xArm app over UDP as
 "P,x,y,z" (mm). Non-AR: plain single-marker pose estimation. Run separately from the app:
 
-    venv/bin/python camera_tracker.py [udp_port]
+    XARM_CAMERA_URL=http://<phone-ip>:4747/video venv/bin/python camera_tracker.py [udp_port]
 
 Requires opencv-contrib-python (installed in venv). The app listens on UDP 8899.
 Use the marker in scratchpad/aruco_marker_id0.png (DICT_4X4_50 id 0) printed/shown flat.
 """
+import os
 import socket
 import sys
 import time
@@ -16,11 +17,14 @@ import cv2
 import cv2.aruco as aruco
 import numpy as np
 
-URL = "http://192.168.1.68:4747/video"     # DroidCam MJPEG stream
+URL = os.environ.get("XARM_CAMERA_URL", "")  # DroidCam MJPEG stream, e.g. http://<phone-ip>:4747/video
 MARKER_MM = 52.6                            # physical marker side length (mm)
 DEST = ("127.0.0.1", int(sys.argv[1]) if len(sys.argv) > 1 else 8899)
 JUMP_MM = 250.0                             # reject implausible per-frame jumps (outliers)
 ALPHA = 0.5                                 # light smoothing at the source
+
+if not URL:
+    sys.exit("set XARM_CAMERA_URL to the MJPEG stream, e.g. http://<phone-ip>:4747/video")
 
 DICT = aruco.getPredefinedDictionary(aruco.DICT_4X4_50)
 det = aruco.ArucoDetector(DICT, aruco.DetectorParameters())
