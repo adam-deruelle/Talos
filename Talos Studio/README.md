@@ -25,10 +25,10 @@ visualisation à l'échelle du bras. Sans ce modèle, l'interface ne saurait pas
 pince dans l'espace.
 
 **Harry Troule — logiciel de contrôle.**
-Implémentation du protocole USB-HID, console native, console web, suivi par caméra,
-empaquetage et intégration au bureau. Cette partie a été développée avec l'assistance de
-**Claude (Claude Code)**, utilisé comme outil d'écriture et de relecture de code ; les choix
-d'architecture, les essais sur le matériel réel et la validation restent le fait de l'auteur.
+Implémentation du protocole USB-HID, console native, console web, empaquetage et intégration
+au bureau. Cette partie a été développée avec l'assistance de **Claude (Claude Code)**, utilisé
+comme outil d'écriture et de relecture de code ; les choix d'architecture, les essais sur le
+matériel réel et la validation restent le fait de l'auteur.
 
 ---
 
@@ -51,7 +51,6 @@ d'après leurs protocoles constructeur.
 | `xarm_gui.py` | Console native (Tkinter) : commande par axe, vues de côté et de dessus à l'échelle, cinématique directe et inverse, poses, enregistrement/relecture de gestes, séquenceur, couple par axe, pilotage par téléphone, transports HID et Bluetooth-LE |
 | `web/xarm_server.py` | Console web : serveur local sur `127.0.0.1`, un unique thread de travail possède le périphérique HID, les requêtes HTTP ne font qu'empiler des ordres |
 | `web/static/` | Interface du panneau web (HTML/CSS/JS, sans dépendance externe) |
-| `camera_tracker.py` | Suivi d'un marqueur ArUco depuis un flux MJPEG ; diffuse la position `P,x,y,z` en UDP vers le port 8899 écouté par la console native |
 | `xArm.spec` | Recette PyInstaller du binaire autonome `xArm` |
 | `install.sh` / `uninstall.sh` | Entrée de bureau (menu d'applications) |
 | `99-xarm-hid.rules` | Règle udev : accès au bras sans `sudo` |
@@ -86,11 +85,9 @@ La console web écoute sur `http://127.0.0.1:8787` ; `XARM_PORT` change le port 
 jeton aléatoire : toutes les requêtes du panneau doivent le présenter, et le serveur applique
 lui-même le bornage de course, le client n'étant jamais considéré comme fiable.
 
-Suivi par caméra (flux MJPEG d'un téléphone, par exemple DroidCam) :
-
-```bash
-XARM_CAMERA_URL=http://<ip-du-telephone>:4747/video venv/bin/python camera_tracker.py
-```
+Pilotage par téléphone (inclinaison, Wi-Fi UDP) : la console native écoute
+`azimuth,pitch,roll` sur le port `8899` et pilote la pince en mode Joints ou le
+bout de bras en mode Tip (cinématique inverse). Aucune app phone n'est fournie dans ce dépôt.
 
 ### Raccourcis de la console native
 
@@ -119,3 +116,19 @@ de compilation : ils sont exclus du dépôt, comme `venv/`.
 Poses, enregistrements, séquences et réglages sont stockés dans le dossier personnel
 (`~/.xarm_poses.json`, `~/.xarm_recordings.json`, `~/.xarm_sequence.json`,
 `~/.xarm_settings.json`) et n'entrent jamais dans le dépôt.
+
+## Piste explorée : suivi par caméra (non retenue)
+
+Un mode de pilotage par suivi caméra a été testé : un téléphone diffuse son flux MJPEG
+(par ex. DroidCam), un script détecte un marqueur ArUco fixe dans l'image, résout sa pose par
+`solvePnP` et en déduit la position 3D du téléphone, envoyée en UDP (`"P,x,y,z"`) à la console
+native pour piloter le bout de bras par cinématique inverse — même principe que le mode Tip du
+pilotage par téléphone, mais avec le déplacement de la caméra comme entrée plutôt que son
+inclinaison.
+
+Ça a fonctionné en test, mais le mode n'a pas été retenu comme fonctionnalité du produit
+(dépendance à une app de streaming vidéo tierce, calibration du marqueur à refaire à chaque
+setup, précision insuffisante et sensible à l'éclairage face au mode Tip par IMU) : le code n'est
+donc pas dans ce dépôt. Pour le reprendre, il faudrait réintroduire un script de suivi (OpenCV +
+`cv2.aruco`, dictionnaire `DICT_4X4_50`) émettant `"P,x,y,z"` (mm) en UDP sur le port `8899`, et
+réintégrer côté `xarm_gui.py` un mode « Camera » à côté de Joints/Tip dans `_phone_tick`.

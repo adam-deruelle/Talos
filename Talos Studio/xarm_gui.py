@@ -42,7 +42,7 @@ CMD_MULT_SERVO_POS_READ = 0x15
 CMD_SERVO_UNLOAD = 0x14
 CMD_GET_BATTERY_VOLTAGE = 0x0F
 
-PHONE_UDP_PORT = 8899                 # phone IMU streamer / camera_tracker.py send here
+PHONE_UDP_PORT = 8899                 # phone IMU streamer sends "azimuth,pitch,roll" here
 
 SERVOS = list(range(1, 7))
 FULL_MIN, FULL_MAX = 0, 1000
@@ -156,7 +156,7 @@ def fk_pose(vals):
     return T[0][3], T[1][3], T[2][3]
 
 
-# Inverse kinematics — numerical damped-least-squares on top of fk_pose (used by phone Tip/Camera modes).
+# Inverse kinematics — numerical damped-least-squares on top of fk_pose (used by phone Tip mode).
 IK_JOINTS = (6, 5, 4, 3)
 
 
@@ -627,8 +627,6 @@ class App(tk.Tk):
         self._phone_lock = threading.Lock()
         self._phone_center_o = None
         self._phone_center_sp = None
-        self._phone_pos = None                # latest phone 3D position (mm) from camera_tracker.py
-        self._phone_pos_center = None
         self._tip_center = None               # tool-tip XYZ captured at "set center"
         self._phone_out = {}
         self._phone_reach_err = 0.0
@@ -1296,12 +1294,12 @@ class App(tk.Tk):
         RButton(ms, self, "⚙ Max delta…", command=self._open_settings, kind="ghost", small=True).pack(side="left", padx=(12, 0))
         self._draw_curve()
 
-        # --- Phone control : IMU tilt (Joints/Tip) or camera position (Camera) over Wi-Fi UDP ---
+        # --- Phone control : IMU tilt (Joints/Tip) over Wi-Fi UDP ---
         ph = group("Phone control (Wi-Fi)", sep=False)
         self.phone_var = tk.BooleanVar(value=False)
         RToggle(ph, self, self.phone_var, "Follow phone", command=self._on_phone_toggle).pack(side="left", padx=(0, 16))
         ttk.Label(ph, text="Control", style="Col.TLabel").pack(side="left")
-        self.phone_ctrl = ttk.Combobox(ph, state="readonly", width=8, values=["Joints", "Tip", "Camera"])
+        self.phone_ctrl = ttk.Combobox(ph, state="readonly", width=8, values=["Joints", "Tip"])
         self.phone_ctrl.set("Joints")
         self.phone_ctrl.pack(side="left", padx=(6, 14))
         self.phone_ctrl.bind("<<ComboboxSelected>>", lambda _e: self._on_phone_mode())
@@ -1824,11 +1822,9 @@ class App(tk.Tk):
             self.jobs.put(("battery", None))
         self.after(20000, self._battery_tick)
 
-    # ================= phone control (Wi-Fi UDP: IMU orientation or camera position) =================
+    # ================= phone control (Wi-Fi UDP: IMU orientation) =================
     def _phone_listener(self):
-        """Receive UDP packets on one port. Two kinds, auto-detected:
-          • 'azimuth,pitch,roll'  from a phone IMU streamer  → orientation
-          • 'P,x,y,z'             from camera_tracker.py      → phone 3D position (mm)
+        """Receive 'azimuth,pitch,roll' UDP packets from a phone IMU streamer on one port.
         Runs in its own daemon thread; only stores the latest — the UI-thread tick drives the arm."""
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -1843,9 +1839,6 @@ class App(tk.Tk):
             except OSError:
                 break
             txt = data.decode("ascii", "ignore").strip()
-            is_pos = txt[:2] == "P,"
-            if is_pos:
-                txt = txt[2:]
             vals = []
             for tok in txt.replace("\r", " ").replace("\n", " ").split(","):
                 try:
@@ -1854,25 +1847,14 @@ class App(tk.Tk):
                     pass
             if len(vals) >= 3:
                 with self._phone_lock:
-                    if is_pos:
-                        self._phone_pos = (vals[0], vals[1], vals[2])
-                    else:
-                        self._phone_orient = (vals[0], vals[1], vals[2])
+                    self._phone_orient = (vals[0], vals[1], vals[2])
                     self._phone_ts = time.monotonic()
 
     def _phone_set_center(self):
         with self._phone_lock:
-            o = self._phone_orient; pos = self._phone_pos
+            o = self._phone_orient
         self._phone_out = {}; self._phone_sent = {}; self._phone_last_send = 0.0
         self._oe_x = {}; self._oe_dx = {}; self._ph_last_t = 0.0    # reset the 1-Euro filter so nothing jumps
-        if self._phone_mode() == "Camera":
-            if pos is None:
-                self.log("No camera data — run camera_tracker.py and aim the phone at the marker.", "warn")
-                return False
-            self._phone_pos_center = pos
-            self._tip_center = fk_pose(self.setpoint)
-            self.log(f"Camera center set (x {pos[0]:.0f}, y {pos[1]:.0f}, z {pos[2]:.0f}).")
-            return True
         if o is None:
             self.log("No phone data yet — start the phone app first.", "warn"); return False
         self._phone_center_o = o
@@ -1898,8 +1880,7 @@ class App(tk.Tk):
                 self.log("Connect the arm first.", "warn"); self.phone_var.set(False); return
             if not self._phone_set_center():
                 self.phone_var.set(False); return
-            how = "move the phone" if self._phone_mode() == "Camera" else "tilt the phone"
-            self.log(f"Follow phone: ON ({self._phone_mode()}) — {how} to move the tip (toggle off to stop).")
+            self.log(f"Follow phone: ON ({self._phone_mode()}) — tilt the phone to move the tip (toggle off to stop).")
         else:
             self.log("Follow phone: OFF.")
 
@@ -1935,22 +1916,13 @@ class App(tk.Tk):
         mode = self._phone_mode()
         engaged = self._phone_engaged()
         with self._phone_lock:
-            o = self._phone_orient; pos = self._phone_pos; ts = self._phone_ts
-        src = pos if mode == "Camera" else o
-        fresh = src is not None and (time.monotonic() - ts) < 1.5
+            o = self._phone_orient; ts = self._phone_ts
+        fresh = o is not None and (time.monotonic() - ts) < 1.5
         lbl = getattr(self, "phone_lbl", None)
         if lbl is not None and lbl.winfo_exists():
-            oor = engaged and mode in ("Tip", "Camera") and self._phone_reach_err > 6
+            oor = engaged and mode == "Tip" and self._phone_reach_err > 6
             extra = f"  · out of reach ({self._phone_reach_err:.0f} mm)" if oor else ""
-            if mode == "Camera":
-                if pos is None:
-                    lbl.config(text=f"waiting for camera tracker → UDP {PHONE_UDP_PORT}", fg=self.pal["muted"])
-                elif not fresh:
-                    lbl.config(text="camera idle (no data)", fg=self.pal["warn"])
-                else:
-                    lbl.config(text=f"phone  x {pos[0]:.0f}  y {pos[1]:.0f}  z {pos[2]:.0f}{extra}",
-                               fg=(self.pal["warn"] if extra else self.pal["live"]))
-            elif o is None:
+            if o is None:
                 lbl.config(text=f"waiting for phone → {self._lan_ip()}:{PHONE_UDP_PORT}", fg=self.pal["muted"])
             elif not fresh:
                 lbl.config(text="phone idle (no data)", fg=self.pal["warn"])
@@ -1960,18 +1932,7 @@ class App(tk.Tk):
         if not (engaged and self.connected and fresh):
             self.after(33, self._phone_tick); return
         raw = None
-        if mode == "Camera" and self._phone_pos_center is not None and self._tip_center is not None:
-            try:
-                scale = max(1, int(self.phone_gain.get())) / 4.0     # Sensitivity 4 → 1:1 (mm tip per mm phone)
-            except (tk.TclError, ValueError):
-                scale = 1.0
-            pcx, pcy, pcz = self._phone_pos_center
-            x0, y0, z0 = self._tip_center
-            dx, dy, dz = pos[0] - pcx, pos[1] - pcy, pos[2] - pcz    # phone move (mm) in the marker frame
-            # map phone(marker) axes -> arm base frame; flip a sign here if a direction comes out reversed:
-            target = (x0 + scale * (-dz), y0 + scale * dx, z0 + scale * (-dy))
-            raw, self._phone_reach_err = ik_solve(target, self.setpoint, self.limits, iters=15)
-        elif mode != "Camera" and self._phone_center_o is not None:
+        if self._phone_center_o is not None:
             try:
                 gain = max(1, int(self.phone_gain.get()))
             except (tk.TclError, ValueError):

@@ -1,7 +1,6 @@
 # Exécution
 hid==1.0.9                          # bras xArm en USB-HID
 bleak==3.0.2                        # transport Bluetooth-LE (optionnel)
-opencv-contrib-python==5.0.0.93     # camera_tracker.py (ArUco)
 
 # Empaquetage du binaire ./xArm : pyinstaller xArm.spec
 pyinstaller==6.22.0
