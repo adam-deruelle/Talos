@@ -3,7 +3,7 @@
 
 **[🇬🇧 English](#english) · [🇫🇷 Français](#francais)**
 
-<!-- TODO: add a GIF or short video of the arm moving (e.g. docs/demo.gif) -->
+![Talos — xArm 1S en mouvement](docs/talos-demo.gif)
 
 ---
 
